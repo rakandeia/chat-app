@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق الدردشة</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>📢 دردشة مباشرة</h2>
+        </div>
+
+        <div id="messages" class="chat-box"></div>
+
+        <div class="chat-input">
+            <input id="messageInput" type="text" placeholder="اكتب رسالتك...">
+            <button onclick="sendMessage()">📩</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        socket.on('chatMessage', (msg) => {
+            const div = document.createElement('div');
+            div.textContent = msg;
+            div.classList.add("message", "received");
+            document.getElementById('messages').appendChild(div);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+        });
+
+        function sendMessage() {
+            const msg = document.getElementById('messageInput').value.trim();
+            if (msg) {
+                const chatBox = document.getElementById("messages");
+
+                // عرض الرسالة المرسلة
+                const userMessage = document.createElement("div");
+                userMessage.textContent = msg;
+                userMessage.classList.add("message", "sent");
+                chatBox.appendChild(userMessage);
+
+                socket.emit('chatMessage', msg);
+                document.getElementById('messageInput').value = '';
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+    </script>
+
+</body>
+</html>
