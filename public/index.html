@@ -22,34 +22,46 @@
         </div>
     </div>
 
-    <script>
-        const socket = io();
+<script>
+    const socket = io();
+    const chatBox = document.getElementById('chat-box');
+    const inputField = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
 
-        socket.on('chatMessage', (msg) => {
-            const div = document.createElement('div');
-            div.textContent = msg;
-            div.classList.add("message", "received");
-            document.getElementById('messages').appendChild(div);
-            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    // اسم المستخدم
+    let username = prompt("أدخل اسمك:");
+    if (!username) username = "مجهول";
+
+    // تحميل الرسائل المخزنة
+    socket.on('loadMessages', (messages) => {
+        messages.forEach(msg => {
+            displayMessage(msg.username, msg.message);
         });
+    });
 
-        function sendMessage() {
-            const msg = document.getElementById('messageInput').value.trim();
-            if (msg) {
-                const chatBox = document.getElementById("messages");
+    // استقبال الرسائل الجديدة
+    socket.on('chatMessage', (data) => {
+        displayMessage(data.username, data.message);
+    });
 
-                // عرض الرسالة المرسلة
-                const userMessage = document.createElement("div");
-                userMessage.textContent = msg;
-                userMessage.classList.add("message", "sent");
-                chatBox.appendChild(userMessage);
-
-                socket.emit('chatMessage', msg);
-                document.getElementById('messageInput').value = '';
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
+    // إرسال الرسالة
+    sendButton.addEventListener('click', () => {
+        const message = inputField.value.trim();
+        if (message) {
+            socket.emit('chatMessage', { username, message });
+            inputField.value = "";
         }
-    </script>
+    });
+
+    function displayMessage(username, message) {
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message', username === "أنا" ? 'sent' : 'received');
+        msgDiv.innerHTML = `<strong>${username}:</strong> ${message}`;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+
 
 </body>
 </html>
