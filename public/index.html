@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,60 +8,67 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
     <div class="chat-container">
         <div class="chat-header">
-            <h2>📢 ChatterX </h2>
+            <h2>💬 ChatterX</h2>
+            <span id="userStatus">مرحباً <span id="userName"></span></span>
         </div>
 
         <div id="messages" class="chat-box"></div>
 
         <div class="chat-input">
-            <input id="messageInput" type="text" placeholder="اكتب رسالتك...">
-            <button onclick="sendMessage()">📤</button>
+            <input id="messageInput" type="text" placeholder="اكتب رسالتك هنا..."
+                   onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button id="sendBtn">
+                <span class="send-icon">➤</span>
+            </button>
         </div>
     </div>
 
-<script>
-    const socket = io();
-    const chatBox = document.getElementById('chat-box');
-    const inputField = document.getElementById('message-input');
-    const sendButton = document.getElementById('send-button');
+    <script>
+        const socket = io();
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const userNameSpan = document.getElementById('userName');
 
-    // اسم المستخدم
-    let username = prompt("أدخل اسمك:");
-    if (!username) username = "مجهول";
+        let username = prompt("أدخل اسمك:") || "زائر";
+        userNameSpan.textContent = username;
 
-    // تحميل الرسائل المخزنة
-    socket.on('loadMessages', (messages) => {
-        messages.forEach(msg => {
-            displayMessage(msg.username, msg.message);
-        });
-    });
-
-    // استقبال الرسائل الجديدة
-    socket.on('chatMessage', (data) => {
-        displayMessage(data.username, data.message);
-    });
-
-    // إرسال الرسالة
-    sendButton.addEventListener('click', () => {
-        const message = inputField.value.trim();
-        if (message) {
-            socket.emit('chatMessage', { username, message });
-            inputField.value = "";
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                socket.emit('chatMessage', { username, message });
+                messageInput.value = '';
+            }
         }
-    });
 
-    function displayMessage(username, message) {
-        const msgDiv = document.createElement('div');
-        msgDiv.classList.add('message', username === "أنا" ? 'sent' : 'received');
-        msgDiv.innerHTML = `<strong>${username}:</strong> ${message}`;
-        chatBox.appendChild(msgDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-</script>
+        sendBtn.onclick = sendMessage;
 
+        socket.on('loadMessages', (messages) => {
+            messages.forEach(msg => displayMessage(msg));
+        });
 
+        socket.on('chatMessage', (data) => {
+            displayMessage(data);
+        });
+
+        function displayMessage(data) {
+            const messageDiv = document.createElement('div');
+            const isOwnMessage = data.username === username;
+            
+            messageDiv.className = `message ${isOwnMessage ? 'sent' : 'received'}`;
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-header">${isOwnMessage ? 'أنت' : data.username}</div>
+                    <div class="message-text">${data.message}</div>
+                    <div class="message-time">${new Date().toLocaleTimeString('ar-SA')}</div>
+                </div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
 </body>
 </html>
