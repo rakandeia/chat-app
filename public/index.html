@@ -27,6 +27,15 @@
 
     <script>
         const socket = io();
+
+        socket.on('connect', () => {
+            console.log('✅ تم الاتصال بالخادم');
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('❌ خطأ في الاتصال:', error);
+        });
+
         const messagesDiv = document.getElementById('messages');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
@@ -66,7 +75,10 @@
                 </div>
             `;
             
+            // إضافة الرسالة إلى صندوق الدردشة
             messagesDiv.appendChild(messageDiv);
+            
+            // تمرير التمرير إلى أحدث رسالة
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
     </script>
