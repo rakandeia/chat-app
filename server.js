@@ -8,13 +8,28 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-app.use(express.static('public')); // لجعل الملفات الثابتة متاحة
+app.use(express.static('public'));
 
-// الاتصال بقاعدة البيانات MongoDB
-const MONGO_URI = "mongodb+srv://username:password@cluster0.mongodb.net/chatterx";
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log("✅ تم الاتصال بقاعدة البيانات"))
-    .catch(err => console.error("❌ خطأ في الاتصال بقاعدة البيانات:", err));
+// تحسين إعدادات الاتصال بـ MongoDB
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/chat-app';
+mongoose.connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000, // زيادة مهلة الاتصال
+    socketTimeoutMS: 45000, // زيادة مهلة Socket
+})
+.then(() => {
+    console.log("✅ تم الاتصال بقاعدة البيانات");
+    // بدء تشغيل السيرفر فقط بعد نجاح الاتصال بقاعدة البيانات
+    const PORT = process.env.PORT || 3000;
+    server.listen(PORT, () => {
+        console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
+    });
+})
+.catch(err => {
+    console.error("❌ خطأ في الاتصال بقاعدة البيانات:", err);
+    process.exit(1);
+});
 
 // إنشاء نموذج للرسائل
 const MessageSchema = new mongoose.Schema({
@@ -43,9 +58,4 @@ io.on('connection', async (socket) => {
     socket.on('disconnect', () => {
         console.log('🔴 مستخدم غادر');
     });
-});
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
 });
