@@ -2,25 +2,41 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const mongoose = require('mongoose');
+const cors = require('cors'); // ✅ أضفنا CORS
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
 
+// ✅ إعداد CORS للسماح لموقع Firebase بالاتصال
+app.use(cors({
+    origin: "https://chatterx-19c9a.web.app",
+    methods: ["GET", "POST"]
+}));
+
+const io = socketIo(server, {
+    cors: {
+        origin: "https://chatterx-19c9a.web.app",
+        methods: ["GET", "POST"]
+    }
+});
+
+// تقديم الملفات الثابتة (public folder)
 app.use(express.static('public'));
 
-// تحسين إعدادات الاتصال بـ MongoDB
+// الاتصال بقاعدة MongoDB
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/chat-app';
+
 mongoose.connect(MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000, // زيادة مهلة الاتصال
-    socketTimeoutMS: 45000, // زيادة مهلة Socket
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
 })
 .then(() => {
     console.log("✅ تم الاتصال بقاعدة البيانات");
-    // بدء تشغيل السيرفر فقط بعد نجاح الاتصال بقاعدة البيانات
+
+    // بدء تشغيل الخادم بعد نجاح الاتصال
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
         console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
@@ -31,7 +47,7 @@ mongoose.connect(MONGO_URI, {
     process.exit(1);
 });
 
-// إنشاء نموذج للرسائل
+// مخطط الرسائل في MongoDB
 const MessageSchema = new mongoose.Schema({
     username: String,
     message: String,
@@ -39,20 +55,19 @@ const MessageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model('Message', MessageSchema);
 
-// عند اتصال المستخدم، إرسال الرسائل المخزنة
+// التعامل مع WebSocket
 io.on('connection', async (socket) => {
     console.log('🔵 مستخدم متصل');
 
-    // إرسال الرسائل المحفوظة عند دخول المستخدم
+    // إرسال الرسائل السابقة
     const messages = await Message.find().sort({ timestamp: 1 });
     socket.emit('loadMessages', messages);
 
-    // استقبال الرسائل الجديدة وحفظها
+    // استقبال الرسائل الجديدة
     socket.on('chatMessage', async (data) => {
         const newMessage = new Message({ username: data.username, message: data.message });
         await newMessage.save();
-
-        io.emit('chatMessage', data); // إرسال الرسالة للجميع
+        io.emit('chatMessage', data);
     });
 
     socket.on('disconnect', () => {
