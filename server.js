@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -20,24 +19,6 @@ const io = socketIo(server, {
 
 // تقديم الملفات الثابتة
 app.use(express.static('public'));
-
-// MongoDB
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/chat-app';
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => {
-  console.log("✅ تم الاتصال بقاعدة البيانات");
-  const PORT = process.env.PORT || 3000;
-  server.listen(PORT, () => {
-    console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
-  });
-})
-.catch(err => {
-  console.error("❌ خطأ في الاتصال بقاعدة البيانات:", err);
-  process.exit(1);
-});
 
 // Model
 const MessageSchema = new mongoose.Schema({
